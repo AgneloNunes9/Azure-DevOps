@@ -1,20 +1,10 @@
 # Introduction 
 TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
+The primary objective of this project was to demonstrate the robust capabilities of DevOps by deploying a containerized Flask API on Azure Kubernetes Service (AKS). The deployment was structured across three distinct namespaces: Test, Staging, and Production.
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+To achieve this, the project utilized two comprehensive pipelines that automated the entire workflow. The first pipeline ensured that the code adhered to established standards by performing rigorous code quality checks. Once the code passed these checks, it proceeded to the second pipeline, which handled API testing to verify functionality and performance.
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
+Upon successful testing, the deployment process was initiated. The Flask API was deployed sequentially across the Test, Staging, and Production environments, ensuring that each stage was thoroughly validated before moving to the next. This meticulous approach guaranteed that any issues were identified and resolved early in the process, thereby maintaining the integrity and reliability of the application.
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+Overall, this project not only highlighted the efficiency and effectiveness of DevOps practices but also showcased the seamless integration and deployment capabilities of Azure Kubernetes Service.
