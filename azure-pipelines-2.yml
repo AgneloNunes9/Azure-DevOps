@@ -1,0 +1,110 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  name: 'Default'
+
+variables:
+
+  # Container registry service connection established during pipeline creation
+  dockerRegistryServiceConnection: 'b50a2ceb-8152-410e-9d28-4e621c745b4c'
+  kubernetesServiceConnection: 'DevOps2233-staging-2059'
+  kubernetesServiceConnectionProd: 'DevOps2233-production-2059'
+  imageRepository: 'flaskapi'
+  containerRegistry: 'azure2233.azurecr.io'
+  tag: '12.0.4'
+  imagePullSecret: 'azure223319840ab7-auth'
+
+  # Agent VM image name
+  vmImageName: 'ubuntu-latest'
+
+steps:
+- task: UsePythonVersion@0
+  displayName: 'Use Python 3.11'
+  inputs:
+    versionSpec: 3.11
+- checkout: self
+- script: |
+    python -m pylint FlaskApi/project/project1/main.py --fail-under=5
+#    pylint_exit_code=$(python -m pylint project/project1/main.py --fail-under=5 || echo $?)
+#    if [ $pylint_exit_code -ne 0 ]; then
+#      echo "Pylint score is below 5, failing the pipeline."
+#      exit 1
+#    fi
+#    exit 0
+- checkout: self
+- script: |
+    cd FlaskApi/project/project1/
+    docker build -t flaskapi1:$(tag) -f Dockerfile .
+  displayName: 'Build Docker image'
+
+- task: AzureCLI@2
+  displayName: 'Login to Azure Container Registry'
+  inputs:
+    azureSubscription: 'Towards-AzurePortal'
+    scriptType: 'ps'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az acr login --name azure2233
+
+- script: |
+    docker tag flaskapi1:$(tag) azure2233.azurecr.io/flaskapi1:$(tag)
+  displayName: 'Tag Docker image'
+
+- script: |
+    docker push azure2233.azurecr.io/flaskapi1:$(tag)
+  displayName: 'Push Docker image to ACR'
+
+- checkout: self
+
+- task: KubernetesManifest@0
+  displayName: Create imagePullSecret
+  inputs:
+    action: createSecret
+    secretName: $(imagePullSecret)
+    dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
+    kubernetesServiceConnection: $(kubernetesServiceConnection)
+
+- task: KubernetesManifest@0
+  displayName: Deploy to Kubernetes cluster
+  inputs:
+    action: deploy
+    namespace: 'staging'
+    manifests: |
+      $(Pipeline.Workspace)/s/FlaskApi/python-project-deployment.yaml
+      $(Pipeline.Workspace)/s/FlaskApi/service.yaml
+    imagePullSecrets: |
+      $(imagePullSecret)
+    containers: |
+      $(containerRegistry)/$(imageRepository):$(tag)
+    kubernetesServiceConnection: $(kubernetesServiceConnection)
+
+
+- script: |
+    curl -X POST "http://172.171.95.168:5000/api/convert" -H 'Content-Type:multipart/form-data' -F 'file=FlaskApi/test_file.docx' -o 'testfile.pdf'
+  displayName: 'Test API with Word file'
+
+
+- task: KubernetesManifest@0
+  displayName: Create imagePullSecret
+  inputs:
+    action: createSecret
+    secretName: $(imagePullSecret)
+    dockerRegistryEndpoint: $(dockerRegistryServiceConnection)
+    kubernetesServiceConnection: $(kubernetesServiceConnectionProd)
+
+- task: KubernetesManifest@0
+  displayName: Deploy to Kubernetes cluster
+  inputs:
+    action: deploy
+    namespace: 'production'
+    manifests: |
+      $(Pipeline.Workspace)/s/FlaskApi/python-project-deployment.yaml
+      $(Pipeline.Workspace)/s/FlaskApi/service.yaml
+    imagePullSecrets: |
+      $(imagePullSecret)
+    containers: |
+      $(containerRegistry)/$(imageRepository):$(tag)
+    kubernetesServiceConnection: $(kubernetesServiceConnectionProd)
